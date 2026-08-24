@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+:root {
+  /* Base neutrals — off-white / cream editorial background */
+  --color-cream: #faf7f2;
+  --color-cream-soft: #f3efe7;
+  --color-paper: #fffdf9;
+  --color-ink: #2b2a27;
+  --color-ink-soft: #55534d;
+  --color-ink-faint: #8b8880;
+  --color-line: #e7e1d5;
+  --color-line-soft: #efeae0;
+
+  /* Brand accent — calm blue-gray */
+  --color-brand: #3f5468;
+  --color-brand-strong: #2c3c4c;
+  --color-brand-soft: #dde5ea;
+  --color-brand-tint: #eef2f4;
+
+  /* Secondary accent — sage / mint */
+  --color-sage: #7a9a86;
+  --color-sage-strong: #4f6d5a;
+  --color-sage-soft: #e3ecE4;
+  --color-sage-tint: #eff5ef;
+
+  /* Danger — reserved for real risk moments only */
+  --color-risk: #b9483f;
+  --color-risk-soft: #f6e4e1;
+  --color-risk-tint: #fbf1ef;
+
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-cream: var(--color-cream);
+  --color-cream-soft: var(--color-cream-soft);
+  --color-paper: var(--color-paper);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-line: var(--color-line);
+  --color-line-soft: var(--color-line-soft);
+
+  --color-brand: var(--color-brand);
+  --color-brand-strong: var(--color-brand-strong);
+  --color-brand-soft: var(--color-brand-soft);
+  --color-brand-tint: var(--color-brand-tint);
+
+  --color-sage: var(--color-sage);
+  --color-sage-strong: var(--color-sage-strong);
+  --color-sage-soft: var(--color-sage-soft);
+  --color-sage-tint: var(--color-sage-tint);
+
+  --color-risk: var(--color-risk);
+  --color-risk-soft: var(--color-risk-soft);
+  --color-risk-tint: var(--color-risk-tint);
+
+  --font-sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Noto Serif KR", "Source Serif 4", ui-serif, Georgia, "Apple SD Gothic Neo", serif;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  background: var(--color-cream);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-sage-soft);
+  color: var(--color-ink);
+}
+
+/* Subtle motion utilities */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.45s ease-out both;
+}
+
+@keyframes gentle-check {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-gentle-check {
+  animation: gentle-check 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes progress-fill {
+  from { width: 0%; }
+}
+
+.animate-progress-fill {
+  animation: progress-fill 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Scrollbar - keep calm/minimal */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 999px;
+}
