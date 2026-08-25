@@ -1,6 +1,13 @@
 "use client";
 
-import { CompletionRecord, NodeRecord, UserProgress } from "./types";
+import {
+  CompletionRecord,
+  LearnStage,
+  NodeRecord,
+  SuperProgressMap,
+  UserProgress,
+} from "./types";
+import { SUPER_THRESHOLD } from "./data/super";
 
 // 데이터 구조가 decision tree(NodeRecord) 기반으로 바뀌어 저장 키를 v2로 올린다.
 const STORAGE_KEY = "anjeonghyeong:progress:v2";
@@ -48,7 +55,8 @@ export function recordCompletion(
   };
 
   const filtered = progress.completions.filter((c) => c.scenarioId !== scenarioId);
-  const next: UserProgress = { completions: [...filtered, record] };
+  // 기존 super 진행상태는 보존한다.
+  const next: UserProgress = { completions: [...filtered, record], super: progress.super };
   saveProgress(next);
   return record;
 }
@@ -104,4 +112,36 @@ export function clearDraft(scenarioId: string) {
   } catch {
     // ignore
   }
+}
+
+// ─────────────────────────────────────────────
+// SUPER 안정형 진행상태 (심화 카드 탐색)
+// ─────────────────────────────────────────────
+
+function getSuperMap(): SuperProgressMap {
+  return getProgress().super ?? {};
+}
+
+/** 특정 시나리오에서 확인한 심화 카드 id 목록 */
+export function getViewedSuperCards(scenarioId: string): string[] {
+  return getSuperMap()[scenarioId]?.viewedCardIds ?? [];
+}
+
+/** 심화 카드를 "확인함"으로 기록한다 (중복 없이 누적) */
+export function markSuperCardViewed(scenarioId: string, cardId: string): void {
+  const progress = getProgress();
+  const map = { ...(progress.super ?? {}) };
+  const current = new Set(map[scenarioId]?.viewedCardIds ?? []);
+  current.add(cardId);
+  map[scenarioId] = { viewedCardIds: Array.from(current) };
+  saveProgress({ completions: progress.completions, super: map });
+}
+
+/** 시나리오의 종합 학습 단계 (none / secured / super) */
+export function getLearnStage(scenarioId: string): LearnStage {
+  const progress = getProgress();
+  const completed = progress.completions.some((c) => c.scenarioId === scenarioId);
+  if (!completed) return "none";
+  const viewed = progress.super?.[scenarioId]?.viewedCardIds?.length ?? 0;
+  return viewed >= SUPER_THRESHOLD ? "super" : "secured";
 }

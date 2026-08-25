@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { scenarios } from "@/lib/data/scenarios";
 import { CATEGORY_LABEL, CATEGORY_ORDER, ScenarioCategory, ScenarioStatus } from "@/lib/types";
 import { useProgress } from "@/lib/useProgress";
+import { learnStageOf } from "@/lib/progress";
 import ScenarioCard from "@/components/ScenarioCard";
 
 const CATEGORIES: ScenarioCategory[] = CATEGORY_ORDER;
@@ -65,7 +66,12 @@ function ScenariosContent() {
       {hydrated && (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 animate-fade-in">
           {filtered.map((s) => (
-            <ScenarioCard key={s.id} scenario={s} status={statusFor(s.id, s.status)} />
+            <ScenarioCard
+              key={s.id}
+              scenario={s}
+              status={statusFor(s.id, s.status)}
+              stage={s.status === "coming-soon" ? "none" : learnStageOf(progress, s.id)}
+            />
           ))}
         </div>
       )}

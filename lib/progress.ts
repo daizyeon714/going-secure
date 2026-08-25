@@ -1,7 +1,27 @@
 import { scenarios } from "./data/scenarios";
-import { ScenarioCategory, CATEGORY_LABEL, CATEGORY_ORDER } from "./types";
+import {
+  ScenarioCategory,
+  CATEGORY_LABEL,
+  CATEGORY_ORDER,
+  LearnStage,
+  UserProgress,
+} from "./types";
+import { SUPER_THRESHOLD } from "./data/super";
 
 export const TOTAL_SCENARIOS = scenarios.length;
+
+// ── 반응형 상태(progress)로부터 순수 계산하는 헬퍼 (storage 재조회 없이) ──
+
+export function viewedSuperCards(progress: UserProgress, scenarioId: string): string[] {
+  return progress.super?.[scenarioId]?.viewedCardIds ?? [];
+}
+
+export function learnStageOf(progress: UserProgress, scenarioId: string): LearnStage {
+  const completed = progress.completions.some((c) => c.scenarioId === scenarioId);
+  if (!completed) return "none";
+  const viewed = viewedSuperCards(progress, scenarioId).length;
+  return viewed >= SUPER_THRESHOLD ? "super" : "secured";
+}
 
 export function getCategories(): ScenarioCategory[] {
   return CATEGORY_ORDER;

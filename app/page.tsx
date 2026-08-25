@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { getHomeScenarios, getImplementedScenarios } from "@/lib/data/scenarios";
 import { useProgress } from "@/lib/useProgress";
+import { learnStageOf } from "@/lib/progress";
 import ScenarioCard from "@/components/ScenarioCard";
 
 export default function HomePage() {
@@ -83,6 +84,7 @@ export default function HomePage() {
                     ? "completed"
                     : "not-started"
               }
+              stage={s.status === "coming-soon" ? "none" : learnStageOf(progress, s.id)}
             />
           ))}
         </div>

@@ -169,4 +169,63 @@ export interface CompletionRecord {
 
 export interface UserProgress {
   completions: CompletionRecord[];
+  /** SUPER 안정형 탐색 상태 (기존 데이터와 분리, 하위호환 위해 optional) */
+  super?: SuperProgressMap;
 }
+
+// ─────────────────────────────────────────────
+// SUPER 안정형 — 심화 상황 탐색
+// ─────────────────────────────────────────────
+
+/** 심화 카드에서 쓰는 아이콘 키 (커스텀 SVG 세트) */
+export type SuperIconKey =
+  | "pet"
+  | "blackout"
+  | "blocked-exit"
+  | "high-rise"
+  | "alone"
+  | "aed"
+  | "recovery"
+  | "cpr";
+
+/** 하나의 심화 상황 카드 — 카드뉴스처럼 10~30초 안에 핵심을 이해하는 밀도 */
+export interface SuperCard {
+  id: string;
+  icon: SuperIconKey;
+  /** 짧은 라벨 (예: "반려동물이 집 안에 있다면?") */
+  title: string;
+  /** 카드 앞면 질문형 한 줄 (호기심 유발) */
+  hook: string;
+  /** 상황 설명 */
+  situation: string;
+  /** 핵심적으로 기억해야 할 행동 (2~3개) */
+  keyActions: string[];
+  /** 왜 그렇게 해야 하는지 짧은 설명 */
+  why: string;
+  /** 주의해야 할 위험행동 */
+  riskyActions: string[];
+}
+
+/** 시나리오별 SUPER 안정형 콘텐츠 묶음 */
+export interface SuperContent {
+  scenarioId: string;
+  /** 섹션 보조 문구 */
+  intro: string;
+  cards: SuperCard[];
+  sourceName: string;
+  sourceUrl: string;
+  /** 질문(채팅) 입력창 placeholder */
+  chatPlaceholder: string;
+  /** 이 시나리오의 검증된 안전 지식 컨텍스트 (질문 답변의 근거 범위) */
+  knowledgeContext: string[];
+}
+
+/** SUPER 진행 상태 — 시나리오별로 확인한 카드 id 집합 */
+export interface SuperProgress {
+  viewedCardIds: string[];
+}
+
+export type SuperProgressMap = Record<string, SuperProgress>;
+
+/** 시나리오의 종합 학습 단계 (숫자 점수 대신 서사적 상태) */
+export type LearnStage = "none" | "secured" | "super";

@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Scenario, ScenarioStatus } from "@/lib/types";
+import { LearnStage, Scenario, ScenarioStatus } from "@/lib/types";
 import ScenarioArt from "./ScenarioArt";
 import CategoryBadge from "./CategoryBadge";
 import StatusBadge from "./StatusBadge";
+import { StageBadge } from "./SuperBadge";
 
 export default function ScenarioCard({
   scenario,
   status,
+  stage = "none",
 }: {
   scenario: Scenario;
   status: ScenarioStatus;
+  /** 학습 단계 achievement 배지 (썸네일 우상단) */
+  stage?: LearnStage;
 }) {
   const disabled = scenario.status === "coming-soon";
 
@@ -34,6 +38,11 @@ export default function ScenarioCard({
         <div className="absolute left-3 top-3">
           <CategoryBadge category={scenario.category} />
         </div>
+        {stage !== "none" && (
+          <div className="absolute right-3 top-3">
+            <StageBadge stage={stage} size="sm" />
+          </div>
+        )}
         {disabled && (
           <div className="absolute inset-0 bg-cream/40" />
         )}
