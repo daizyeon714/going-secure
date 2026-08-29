@@ -6,6 +6,7 @@ import ScenarioArt from "./ScenarioArt";
 import CategoryBadge from "./CategoryBadge";
 import StatusBadge from "./StatusBadge";
 import { StageBadge } from "./SuperBadge";
+import { useToast } from "./Toast";
 
 export default function ScenarioCard({
   scenario,
@@ -18,6 +19,7 @@ export default function ScenarioCard({
   stage?: LearnStage;
 }) {
   const disabled = scenario.status === "coming-soon";
+  const { showToast } = useToast();
 
   const content = (
     <div
@@ -64,7 +66,16 @@ export default function ScenarioCard({
   );
 
   if (disabled) {
-    return <div aria-disabled className="cursor-default select-none">{content}</div>;
+    return (
+      <button
+        type="button"
+        aria-label={`${scenario.situationTitle} — 준비 중`}
+        onClick={() => showToast("곧 만나볼 수 있어요. 준비 중인 상황이에요.")}
+        className="block w-full text-left cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+      >
+        {content}
+      </button>
+    );
   }
 
   return (

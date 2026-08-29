@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 import { getScenarioById, getNode } from "@/lib/data/scenarios";
 
 // 이 API는 검증된 행동원칙과 평가 기준을 "변경"하지 않는다.
@@ -22,8 +23,11 @@ interface FeedbackRequestBody {
   userText?: string;
 }
 
-const MODEL = "claude-3-5-haiku-20241022";
-const API_URL = "https://api.anthropic.com/v1/messages";
+// 판단 해석과 SUPER 질문 모두 Google Gemini(무료 등급) 하나로 동작한다.
+// GEMINI_API_KEY 하나만 넣으면 두 기능이 함께 켜지고, 없거나 실패하면 각자 안전 fallback으로 대체된다.
+// 최신 키에서 gemini-1.5-flash가 404가 나는 경우가 있어 2.0-flash를 기본으로 쓴다.
+// 환경변수 GEMINI_MODEL로 언제든 다른 모델명으로 바꿀 수 있다.
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
 export async function POST(req: NextRequest) {
   let body: FeedbackRequestBody;
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }
@@ -68,10 +72,11 @@ export async function POST(req: NextRequest) {
 위 범위 안에서 사용자의 선택 맥락에 맞춘 자연스러운 설명만 2~3문장으로 작성하세요. 새로운 안전 수칙이나 정보를 추가하지 마세요.`;
 
     try {
-      const text = await callClaude(apiKey, prompt, 300);
+      const text = await callGemini(apiKey, prompt, 300);
       if (!text) return NextResponse.json({ error: "ai_empty" }, { status: 502 });
       return NextResponse.json({ feedback: text.trim() });
-    } catch {
+    } catch (e) {
+      console.error("[feedback:choice] Gemini 호출 실패:", e);
       return NextResponse.json({ error: "ai_exception" }, { status: 502 });
     }
   }
@@ -123,7 +128,7 @@ ${node.verifiedPrinciple}
 }`;
 
   try {
-    const raw = await callClaude(apiKey, prompt, 700);
+    const raw = await callGemini(apiKey, prompt, 700);
     if (!raw) return NextResponse.json({ error: "ai_empty" }, { status: 502 });
 
     const parsed = extractJson(raw);
@@ -150,35 +155,26 @@ ${node.verifiedPrinciple}
     }
 
     return NextResponse.json(result);
-  } catch {
+  } catch (e) {
+    console.error("[feedback:freeText] Gemini 호출 실패:", e);
     return NextResponse.json({ error: "ai_exception" }, { status: 502 });
   }
 }
 
-async function callClaude(
+// 공식 SDK 사용 — AQ. / AIza 두 형식의 Gemini 키를 모두 지원한다.
+async function callGemini(
   apiKey: string,
   prompt: string,
   maxTokens: number
 ): Promise<string | null> {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }],
-    }),
-    signal: AbortSignal.timeout(12000),
+  const ai = new GoogleGenAI({ apiKey });
+  const result = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: prompt,
+    config: { maxOutputTokens: maxTokens, temperature: 0.4 },
   });
-
-  if (!response.ok) return null;
-  const data = await response.json();
-  const text: string | undefined = data?.content?.[0]?.text;
-  return text ?? null;
+  const text = result.text?.trim();
+  return text || null;
 }
 
 // JSON 블록을 안전하게 추출 (모델이 앞뒤에 텍스트를 붙여도 파싱)

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 import { getSuperContent } from "@/lib/data/super";
 import { getScenarioById } from "@/lib/data/scenarios";
 
@@ -15,8 +16,11 @@ import { getScenarioById } from "@/lib/data/scenarios";
 
 export const runtime = "nodejs";
 
-const MODEL = "claude-3-5-haiku-20241022";
-const API_URL = "https://api.anthropic.com/v1/messages";
+// SUPER 질문 챗봇만 Google Gemini(무료 등급)를 사용한다.
+// 나머지 AI 기능(/api/feedback 등)은 그대로 유지된다.
+// Gemini 키가 없거나 한도 초과·실패 시에는 명확한 에러를 반환하고,
+// 클라이언트(SuperChat)가 미리 준비된 안전 fallback 문구로 대체한다.
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
 interface Body {
   scenarioId: string;
@@ -42,8 +46,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "empty_question" }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // Gemini 무료 키 (GEMINI_API_KEY 또는 GOOGLE_API_KEY 중 아무거나)
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
   if (!apiKey) {
+    // 키가 없으면 클라이언트가 안전 fallback으로 넘어간다.
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }
 
@@ -69,33 +75,23 @@ ${question}
 위 규칙과 검증된 지식 범위 안에서 답변만 작성하세요.`;
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 500,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal: AbortSignal.timeout(13000),
+    // 공식 SDK 사용 — AQ. / AIza 두 형식의 키를 모두 지원한다.
+    const ai = new GoogleGenAI({ apiKey });
+    const result = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: { maxOutputTokens: 500, temperature: 0.4 },
     });
 
-    if (!response.ok) {
-      return NextResponse.json({ error: "ai_error" }, { status: 502 });
-    }
-
-    const data = await response.json();
-    const text: string | undefined = data?.content?.[0]?.text;
+    const text = result.text?.trim();
     if (!text) {
       return NextResponse.json({ error: "ai_empty" }, { status: 502 });
     }
 
-    return NextResponse.json({ answer: text.trim() });
-  } catch {
+    return NextResponse.json({ answer: text });
+  } catch (e) {
+    console.error("[super-question] Gemini 호출 실패:", e);
+    // 키 오류·한도 초과·네트워크 오류 등 → 클라이언트가 안전 fallback으로 대체
     return NextResponse.json({ error: "ai_exception" }, { status: 502 });
   }
 }
